@@ -21,12 +21,12 @@ def save_data(users_df, history_df, questions_df):
 
 # Display user history
 def user_history(user_id, history_df):
-    st.subheader("Historique des QCM")
+    st.subheader("QCM history")
     history_user = history_df[history_df['user_id'] == user_id]
     if history_user.empty:
-        st.info("Aucun historique trouvé pour cet utilisateur.")
+        st.info("No history found for this user.")
     else:
-        st.write("Voici votre historique complet :")
+        st.write("Here's your full history :")
         for index, row in history_user.iterrows():
             st.write(f"📅 Date: {row['date']}, Score: {row['score']}")
 
@@ -37,7 +37,7 @@ def export_results_to_file(history_user):
     history_user.to_csv(csv_file, index=False)
     with open(csv_file, "rb") as f:
         st.download_button(
-            label="📥 Télécharger les résultats en CSV",
+            label="📥 download your result in CSV",
             data=f,
             file_name=csv_file,
             mime="text/csv"
@@ -49,19 +49,19 @@ def export_results_to_file(history_user):
             f.write(f"User ID: {row['user_id']}, Date: {row['date']}, Score: {row['score']}\n")
     with open(txt_file, "rb") as f:
         st.download_button(
-            label="📥 Télécharger les résultats en TXT",
+            label="📥 Download your results in TXT",
             data=f,
             file_name=txt_file,
             mime="text/plain"
         )
 
 def run_quiz(user_id, questions_df, history_df, users_df):
-    st.header("QCM en cours 🗃️")
+    st.header("Ongoing QCM\\ 🗃️")
     if "current_question"  in st.session_state:
      st.write(st.session_state.current_question)
-    st.header("Choisissez une catégorie pour commencer le QCM 🗂️")
+    st.header("Choose a category to start the QCM 🗂️")
     categories = questions_df['category'].unique()  # Get unique categories from the questions
-    selected_category = st.selectbox("Sélectionner une catégorie", categories)
+    selected_category = st.selectbox("Select a category", categories)
 
     if selected_category:
         # Store the selected category in session state
@@ -99,7 +99,7 @@ def run_quiz(user_id, questions_df, history_df, users_df):
 
         # Afficher les options comme des boutons radio
         selected_option = st.radio(
-            "Choisissez une option :",
+            "Choose an answer :",
             list(options.values()),
             key=f"question-{st.session_state.current_question}"
         )
@@ -110,26 +110,27 @@ def run_quiz(user_id, questions_df, history_df, users_df):
         mins, secs = divmod(remaining_time, 60)
 
         if remaining_time > 0:
-            st.write(f"⏳ Temps restant : {mins:02d}:{secs:02d}")
+            st.write(f"⏳ remaining time: {mins:02d}:{secs:02d}")
         else:
             # Si le temps est écoulé, valider automatiquement la réponse comme incorrecte
                 st.session_state.answer_validated = True
-                st.write("Temps écoulé ❌. La bonne réponse était" + str(row['answer']) + " car " + str(row['explication']))
+                st.write("Elapsed time ❌. the right answer was" + str(row['answer']) + " because " + str(row['explication']))
                 st.session_state.answer_validated = True  # Marquer la réponse comme validée automatiquement
 
         # Valider la réponse si l'utilisateur clique sur le bouton avant que le temps ne soit écoulé
-        if remaining_time > 0 and st.button("Valider votre réponse", key=f"validate-{st.session_state.current_question}"):
+        if remaining_time > 0 and st.button("Please validate your answer", key=f"validate-{st.session_state.current_question}"):
 
             if selected_option == row['answer']:
-                st.success("Bonne réponse ! ✅")
+                st.success("Correct answer ! ✅"+ " because " + str(row['explication']))
                 st.session_state.score += 1
             else:
-                st.write("Mauvaise réponse ❌. La bonne réponse était " + str(row['answer']) + " car " + str(row['explication']) )
+
+                st.error("Wrong answer ❌. the correct answer was " + str(row['answer']) + " car " + str(row['explication']) )
             st.session_state.answer_validated = True  # La réponse est validée
 
         if st.session_state.answer_validated:
             if st.session_state.current_question < total_questions - 1:
-                next_question_button = st.button("Question suivante")
+                next_question_button = st.button("Next question")
                 if next_question_button:
                     st.session_state.current_question += 1  # Passer à la question suivante
                     st.session_state.answer_validated = False  # Réinitialiser la validation
@@ -137,8 +138,8 @@ def run_quiz(user_id, questions_df, history_df, users_df):
                     st.rerun()  # Forcer le rechargement de la prochaine question
             else:
                 # Fin du quiz
-                st.success("Vous avez terminé le QCM ! 🎉")
-                st.write(f"🎉 **Votre score final : {st.session_state.score}/{total_questions}**")
+                st.success("YOU HAVE FINISHED YOUR QCM ! 🎉")
+                st.write(f"🎉 **Your final score is : {st.session_state.score}/{total_questions}**")
 
                 # Enregistrer les résultats dans l'historique
                 new_entry = pd.DataFrame({
@@ -149,7 +150,7 @@ def run_quiz(user_id, questions_df, history_df, users_df):
                 history_df = pd.concat([history_df, new_entry], ignore_index=True)
                 save_data(users_df, history_df, questions_df)
 
-                st.success("Résultat sauvegardé avec succès !")
+                st.success("Result saved successfully!")
                 st.balloons()
 
                 # Réinitialiser l'état pour un nouveau quiz
@@ -176,15 +177,15 @@ def login_page(users_df, history_df):
     if "score" not in st.session_state:
         st.session_state.score = 0
 
-    st.header("Connexion utilisateur")
-    username = st.text_input("Entrez votre nom :").strip()
+    st.header("User Sign in")
+    username = st.text_input("Please enter your username :").strip()
 
     if username:
         # Check if the username exists in the users_df
         user = users_df[users_df['name'] == username]
 
         if not user.empty:
-            st.success(f"Bienvenue, {username} ! 🎉")
+            st.success(f"Welcome, {username} ! 🎉")
 
             # Get the user id
             user_id = user.iloc[0]['id']
@@ -194,7 +195,7 @@ def login_page(users_df, history_df):
             user_history(user_id, history_df)
 
             # Start a new quiz
-            if st.button("Commencer un nouveau QCM"):
+            if st.button("Start a new QCM"):
                 st.session_state.quiz_started = True
                 st.session_state.current_question = 0
                 st.session_state.score = 0
@@ -204,19 +205,19 @@ def login_page(users_df, history_df):
                 st.rerun()
 
         else:
-            st.error("Utilisateur non trouvé. Veuillez vérifier votre nom ou créer un nouvel utilisateur.")
+            st.error("User not found, please check the capitalization or create a new user.")
 
             # Option to create a new user
-            if st.checkbox("Créer un nouvel utilisateur"):
+            if st.checkbox("Creat new user"):
                 new_id = users_df['id'].max() + 1
                 new_user = pd.DataFrame({"id": [new_id], "name": [username]})
                 users_df = pd.concat([users_df, new_user], ignore_index=True)
                 save_data(users_df, history_df, questions_df)
-                st.success("Utilisateur créé avec succès ! Rechargez l'application.")
+                st.success("User created successfully! Reload the application.")
                 user_id = new_id
                 st.session_state.user_id = user_id  # Set the user_id in session state
 
-                if st.button("Commencer un nouveau QCM"):
+                if st.button("Start a new QCM"):
                     st.session_state.quiz_started = True
                     st.session_state.current_question = 0
                     st.session_state.score = 0
@@ -224,11 +225,11 @@ def login_page(users_df, history_df):
                     st.rerun()
 
     else:
-        st.info("Entrez votre nom pour continuer.")
+        st.info("Enter your namee to continue.")
 
 
 # Main entry point for the Streamlit app
-st.title("Application de QCM Informatique 📘")
+st.title(" QCM  Application 📘")
 users_df, history_df, questions_df = load_data()
 
 # Ensure all session states are initialized
